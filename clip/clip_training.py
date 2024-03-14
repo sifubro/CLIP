@@ -1,6 +1,39 @@
 # Latest Update : 18 July 2022, 09:55 GMT+7
 # From https://github.com/openai/CLIP/issues/83
 
+'''
+NOTE :
+that for inference purpose, the conversion step from fp16 to fp32 is not needed, just use the model in full fp16
+For multi-GPU training, see my comment on how to use multiple GPUs,the default is to use the first CUDA device #111 (comment)
+I'm not the author of this model nor having any relationship with the author. I'm just a random guy who interested in CLIP.
+For training image-image or text-text, please refer to this principle : CLIP Training Code #83 (comment)
+What is the difference between image loss and text loss? isn't one just a transposed version of the other one? read this then CLIP Training Code #83 (comment)
+Why the ground truth is torch.arange? CLIP Training Code #83 (comment)
+Code to save the model :
+
+torch.save({
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'loss': total_loss,
+        }, f"model_checkpoint/model_10.pt") #just change to your preferred folder/filename
+Code to load the saved model :
+
+model, preprocess = clip.load("ViT-B/32",device=device,jit=False) #Must set jit=False for training
+checkpoint = torch.load("model_checkpoint/model_10.pt")
+
+# Use these 3 lines if you use default model setting(not training setting) of the clip. For example, if you set context_length to 100 since your string is very long during training, then assign 100 to checkpoint['model_state_dict']["context_length"] 
+checkpoint['model_state_dict']["input_resolution"] = model.input_resolution #default is 224
+checkpoint['model_state_dict']["context_length"] = model.context_length # default is 77
+checkpoint['model_state_dict']["vocab_size"] = model.vocab_size 
+
+model.load_state_dict(checkpoint['model_state_dict'])
+Alternative training code :
+
+@Zasder3 have created a PyTorch lighting version to train the CLIP https://github.com/Zasder3/train-CLIP
+@mitchellnw researchers at UW, Google, Stanford, Amazon, Columbia, and Berkeley also create their training code https://github.com/mlfoundations/open_clip
+'''
+
 # TO ADD :
 # Gradient Checkpointing
 # Filter out bias from weight decay
